@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kodtara"
+version = "1.0.0"
+description = "LLM uygulaması kodunda güvensiz prompt kurma ve çıktı işleme kalıpları için statik tarayıcı"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+authors = [{name = "Arda Meçik"}]
+
+[project.scripts]
+kodtara = "kodtara.cli:ana"
+
+[tool.setuptools.packages.find]
+include = ["kodtara*"]
