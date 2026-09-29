@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import ast
 import re
@@ -11,7 +11,7 @@ ATLANACAK_DIZINLER = {".git", "__pycache__", ".venv", "venv", "node_modules", ".
 EN_BUYUK_DOSYA = 1_000_000
 
 PROMPT_HEDEFI = re.compile(r"(system|sistem|talimat|instruction|prompt)", re.IGNORECASE)
-KULLANICI_GIRDISI = re.compile(r"(user_input|userinput|\buser\w*|kullan[iÄ±]c[iÄ±]|\bgirdi\b|istek|soru|sorgu|mesaj|request\.|args\.|form\[|\binput\w*|sys\.argv)", re.IGNORECASE)
+KULLANICI_GIRDISI = re.compile(r"(user_input|userinput|\buser\w*|kullan[iı]c[iı]|\bgirdi\b|istek|soru|sorgu|mesaj|request\.|args\.|form\[|\binput\w*|sys\.argv)", re.IGNORECASE)
 LLM_KAYNAK = re.compile(r"(llm|openai|anthropic|gemini|ollama|chat|completion|model|yanit|cevap|cikti|sonuc|response|output|reply)", re.IGNORECASE)
 LLM_URETIM_FONK = re.compile(r"(^|[.`\s])(invoke|arun|create|chat|complete|generate|predict|stream|__call__)\b", re.IGNORECASE)
 TEHLIKELI_CAGRI = re.compile(r"\b(exec|eval|compile)\s*\(|os\.system\s*\(|subprocess\.(run|call|Popen|check_output|check_call)\s*\(|pickle\.loads\s*\(")
@@ -22,10 +22,10 @@ LOG_FONK = re.compile(r"\bprint\s*\(|\blogging\.(info|debug|warning|error|critic
 GIZLI_AD = re.compile(r"(api[_-]?key|apikey|secret|token|password|sifre|parola|authorization|auth[_-]?header)", re.IGNORECASE)
 
 GIZLI_KALIPLAR = [
-    (re.compile(r"sk-ant-[A-Za-z0-9\-_]{8,}"), "Anthropic anahtarÄ±"),
-    (re.compile(r"sk-[A-Za-z0-9]{8,}"), "OpenAI anahtarÄ±"),
+    (re.compile(r"sk-ant-[A-Za-z0-9\-_]{8,}"), "Anthropic anahtarı"),
+    (re.compile(r"sk-[A-Za-z0-9]{8,}"), "OpenAI anahtarı"),
     (re.compile(r"hf_[A-Za-z0-9]{8,}"), "Hugging Face jetonu"),
-    (re.compile(r"AKIA[0-9A-Z]{16}"), "AWS eriÅŸim anahtarÄ±"),
+    (re.compile(r"AKIA[0-9A-Z]{16}"), "AWS erişim anahtarı"),
     (re.compile(r"ghp_[A-Za-z0-9]{8,}"), "GitHub jetonu"),
     (re.compile(r"xox[bpas]-[A-Za-z0-9\-]{8,}"), "Slack jetonu"),
     (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"), "Ã–zel anahtar"),
@@ -49,7 +49,12 @@ def _kanit(satir: str) -> str:
 def _kabuk_riski(satir: str) -> bool:
     if not KABUK_YETKI.search(satir):
         return False
-    dizi_disi = re.sub(r'""".*?"""|\'\'\'.*?\'\'\'|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`', "", satir, flags=re.DOTALL)
+    dizi_disi = re.sub(
+        r'""".*?"""|\'\'\'.*?\'\'\'|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`',
+        "",
+        satir,
+        flags=re.DOTALL,
+    )
     return bool(KABUK_YETKI.search(dizi_disi))
 
 
@@ -63,7 +68,7 @@ def _degiskenler_kesisim(metin: str, kaynak: set[str]) -> set[str]:
 
 
 def _python_veriakisi(metin: str) -> tuple[set[str], set[str]]:
-    """AST'ten (llm kaynaklÄ± deÄŸiÅŸkenler, kullanÄ±cÄ± girdisi deÄŸiÅŸkenleri)."""
+    """AST'ten (llm kaynaklı değişkenler, kullanıcı girdisi değişkenleri)."""
     llm_deg: set[str] = set()
     girdi_deg: set[str] = set()
     try:
@@ -105,7 +110,7 @@ def _python_veriakisi(metin: str) -> tuple[set[str], set[str]]:
 def _hedef_adi(hedef: ast.AST) -> str | None:
     if isinstance(hedef, ast.Name):
         return hedef.id
-    if isinstance(hedef, (ast.Tuple, ast.List)):
+    if isinstance(hedef, ast.Tuple | ast.List):
         for eleman in hedef.elts:
             ad = _hedef_adi(eleman)
             if ad:
@@ -128,7 +133,16 @@ def _python_ast_tara(metin: str, goreceli: str) -> list[Bulgu]:
     try:
         agac = ast.parse(metin)
     except SyntaxError as hata:
-        return [Bulgu("KDT00", "dusuk", goreceli, hata.lineno or 1, "Dosya ayrÄ±ÅŸtÄ±rÄ±lamadÄ±, metin kurallarÄ±yla tarandÄ±.", "", "DosyanÄ±n Python sÃ¶zdizimini dÃ¼zeltin.")]
+        return [Bulgu(
+                "KDT00",
+                "dusuk",
+                goreceli,
+                hata.lineno or 1,
+                "Dosya ayrıştırılamadı, metin kurallarıyla tarandı.",
+                "",
+                "Dosyanın Python sözdizimini dÃ¼zeltin.",
+            )
+        ]
 
     llm_deg, girdi_deg = _python_veriakisi(metin)
     bulgular: list[Bulgu] = []
@@ -141,9 +155,9 @@ def _python_ast_tara(metin: str, goreceli: str) -> list[Bulgu]:
                 adlar.append(ad)
         return adlar
 
-    # KDT01 (AST): prompt'a atanan JoinedStr iÃ§inde kullanÄ±cÄ± girdisi deÄŸiÅŸkeni
+    # KDT01 (AST): prompt'a atanan JoinedStr içinde kullanıcı girdisi değişkeni
     for dugum in ast.walk(agac):
-        if not isinstance(dugum, (ast.Assign, ast.AnnAssign)) or not isinstance(dugum.value, ast.JoinedStr):
+        if not isinstance(dugum, ast.Assign | ast.AnnAssign) or not isinstance(dugum.value, ast.JoinedStr):
             continue
         adlar = _hedef_adlari(dugum)
         hedef_prompt = any(PROMPT_HEDEFI.search(ad) for ad in adlar)
@@ -156,9 +170,22 @@ def _python_ast_tara(metin: str, goreceli: str) -> list[Bulgu]:
         for deger in dugum.value.values:
             if not isinstance(deger, ast.FormattedValue):
                 continue
-            if isinstance(deger.value, ast.Name) and (deger.value.id in girdi_deg or KULLANICI_GIRDISI.search(deger.value.id)):
+            if (
+                isinstance(deger.value, ast.Name)
+                and (deger.value.id in girdi_deg or KULLANICI_GIRDISI.search(deger.value.id))
+            ):
                 satir_no = getattr(deger, "lineno", 1) or getattr(dugum, "lineno", 1)
-                bulgular.append(Bulgu("KDT01", "yuksek", goreceli, satir_no, "KullanÄ±cÄ± girdisi sistem promptuna doÄŸrudan ekleniyor.", _kanit(_satir_al(satirlar, satir_no)), "KullanÄ±cÄ± girdisini sistem talimatÄ±yla birleÅŸtirmeyin; rol ayrÄ±mÄ± yapÄ±n."))
+                bulgular.append(
+                        Bulgu(
+                        "KDT01",
+                        "yuksek",
+                        goreceli,
+                        satir_no,
+                        "Kullanıcı girdisi sistem promptuna doğrudan ekleniyor.",
+                        _kanit(_satir_al(satirlar, satir_no)),
+                        "Kullanıcı girdisini sistem talimatıyla birleştirmeyin; rol ayrımı yapın.",
+                        )
+                )
                 break
 
     def _cagri_arguman_metni(cagri: ast.Call) -> str:
@@ -171,11 +198,41 @@ def _python_ast_tara(metin: str, goreceli: str) -> list[Bulgu]:
         fonksiyon = ast.unparse(dugum.func) if hasattr(ast, "unparse") else ""
         arguman = _cagri_arguman_metni(dugum)
         satir_no = getattr(dugum, "lineno", 1)
-        if re.search(r"\b(exec|eval|compile)\s*$|os\.system$|subprocess\.(run|call|Popen|check_output|check_call)$|pickle\.loads$", fonksiyon):
+        if re.search(
+            r"\b(exec|eval|compile)\s*$|os\.system$"
+            r"|subprocess\.(run|call|Popen|check_output|check_call)$|pickle\.loads$",
+            fonksiyon,
+        ):
             if _degiskenler_kesisim(arguman, llm_deg) or LLM_KAYNAK.search(arguman):
-                bulgular.append(Bulgu("KDT02", "kritik", goreceli, satir_no, "Model Ã§Ä±ktÄ±sÄ± kod olarak Ã§alÄ±ÅŸtÄ±rÄ±lÄ±yor.", _kanit(_satir_al(satirlar, satir_no)), "Model Ã§Ä±ktÄ±sÄ±nÄ± exec, eval veya kabuk Ã§aÄŸrÄ±sÄ±na vermeyin; izin listesi kullanÄ±n."))
-        elif re.search(r"\b(print|logging\.(info|debug|warning|error|critical)|logger\.\w+)\s*$", fonksiyon) and _degiskenler_kesisim(arguman, llm_deg):
-            bulgular.append(Bulgu("KDT07", "orta", goreceli, satir_no, "Hassas deÄŸer log veya konsola yazÄ±lÄ±yor.", _kanit(_satir_al(satirlar, satir_no)), "Loglara model Ã§Ä±ktÄ±sÄ± veya gizli deÄŸer yazmayÄ±n."))
+                bulgular.append(
+                        Bulgu(
+                        "KDT02",
+                        "kritik",
+                        goreceli,
+                        satir_no,
+                        "Model çıktısı kod olarak çalıştırılıyor.",
+                        _kanit(_satir_al(satirlar, satir_no)),
+                        "Model çıktısını exec, eval veya kabuk çağrısına vermeyin; izin listesi kullanın.",
+                        )
+                )
+        elif (
+            re.search(
+                r"\b(print|logging\.(info|debug|warning|error|critical)|logger\.\w+)\s*$",
+                fonksiyon,
+            )
+            and _degiskenler_kesisim(arguman, llm_deg)
+        ):
+            bulgular.append(
+                    Bulgu(
+                    "KDT07",
+                    "orta",
+                    goreceli,
+                    satir_no,
+                    "Hassas değer log veya konsola yazılıyor.",
+                    _kanit(_satir_al(satirlar, satir_no)),
+                    "Loglara model çıktısı veya gizli değer yazmayın.",
+                    )
+            )
     return bulgular
 
 
@@ -191,25 +248,101 @@ def _metin_kurallari(metin: str, goreceli: str, py_mi: bool, llm_deg: set[str] |
         satir = ham.strip()
         if not satir or satir.startswith(("#", "//")):
             continue
-        kucuk = satir.lower()
         if PROMPT_HEDEFI.search(satir) and KULLANICI_GIRDISI.search(satir):
-            if 'f"' in satir or "f'" in satir or "${" in satir or ".format(" in satir or "%s" in satir or ("+" in satir and KULLANICI_GIRDISI.search(satir)):
-                bulgular.append(Bulgu("KDT01", "yuksek", goreceli, sira, "KullanÄ±cÄ± girdisi sistem promptuna doÄŸrudan ekleniyor.", _kanit(satir), "KullanÄ±cÄ± girdisini sistem talimatÄ±yla birleÅŸtirmeyin; rol ayrÄ±mÄ± yapÄ±n."))
+            if (
+                'f"' in satir
+                or "f'" in satir
+                or "${" in satir
+                or ".format(" in satir
+                or "%s" in satir
+                or ("+" in satir and KULLANICI_GIRDISI.search(satir))
+            ):
+                bulgular.append(
+                        Bulgu(
+                        "KDT01",
+                        "yuksek",
+                        goreceli,
+                        sira,
+                        "Kullanıcı girdisi sistem promptuna doğrudan ekleniyor.",
+                        _kanit(satir),
+                        "Kullanıcı girdisini sistem talimatıyla birleştirmeyin; rol ayrımı yapın.",
+                        )
+                )
         if TEHLIKELI_CAGRI.search(satir) and not py_mi and _llm_iliskisi(satir):
-            bulgular.append(Bulgu("KDT02", "kritik", goreceli, sira, "Model Ã§Ä±ktÄ±sÄ± kod olarak Ã§alÄ±ÅŸtÄ±rÄ±lÄ±yor.", _kanit(satir), "Model Ã§Ä±ktÄ±sÄ±nÄ± exec, eval veya kabuk Ã§aÄŸrÄ±sÄ±na vermeyin; izin listesi kullanÄ±n."))
+            bulgular.append(
+                    Bulgu(
+                    "KDT02",
+                    "kritik",
+                    goreceli,
+                    sira,
+                    "Model çıktısı kod olarak çalıştırılıyor.",
+                    _kanit(satir),
+                    "Model çıktısını exec, eval veya kabuk çağrısına vermeyin; izin listesi kullanın.",
+                    )
+            )
         if DIS_ISTEK.search(satir) and _llm_iliskisi(satir):
-            bulgular.append(Bulgu("KDT03", "yuksek", goreceli, sira, "Model Ã§Ä±ktÄ±sÄ± doÄŸrulanmadan dÄ±ÅŸ isteÄŸe gÃ¶nderiliyor.", _kanit(satir), "GÃ¶ndermeden Ã¶nce izin verilen alanlarÄ± seÃ§in."))
+            bulgular.append(
+                    Bulgu(
+                    "KDT03",
+                    "yuksek",
+                    goreceli,
+                    sira,
+                    "Model çıktısı doğrulanmadan dış isteğe gönderiliyor.",
+                    _kanit(satir),
+                    "Göndermeden önce izin verilen alanları seçin.",
+                    )
+            )
         if HTML_BASMA.search(satir) and _llm_iliskisi(satir):
-            bulgular.append(Bulgu("KDT04", "yuksek", goreceli, sira, "Model Ã§Ä±ktÄ±sÄ± kaÃ§Ä±ÅŸsÄ±z HTML olarak basÄ±lÄ±yor.", _kanit(satir), "HTML basmadan Ã¶nce kaÃ§Ä±ÅŸ yapÄ±n."))
+            bulgular.append(
+                    Bulgu(
+                    "KDT04",
+                    "yuksek",
+                    goreceli,
+                    sira,
+                    "Model çıktısı kaçışsız HTML olarak basılıyor.",
+                    _kanit(satir),
+                    "HTML basmadan önce kaçış yapın.",
+                    )
+            )
         if _kabuk_riski(satir):
-            bulgular.append(Bulgu("KDT05", "yuksek", goreceli, sira, "AÅŸÄ±rÄ± yetkili kabuk veya yÄ±kÄ±cÄ± komut kalÄ±bÄ±.", _kanit(satir), "shell=True ve yÄ±kÄ±cÄ± komutlardan kaÃ§Ä±nÄ±n."))
+            bulgular.append(
+                    Bulgu(
+                    "KDT05",
+                    "yuksek",
+                    goreceli,
+                    sira,
+                    "Aşırı yetkili kabuk veya yıkıcı komut kalıbı.",
+                    _kanit(satir),
+                    "shell=True ve yıkıcı komutlardan kaçının.",
+                    )
+            )
         for kalip, ad in GIZLI_KALIPLAR:
             eslesme = kalip.search(satir)
             if eslesme:
-                bulgular.append(Bulgu("KDT06", "kritik", goreceli, sira, f"Koda gÃ¶mÃ¼lÃ¼ gizli anahtar bulundu ({ad}).", _maskele(eslesme.group(0)), "AnahtarÄ± ortam deÄŸiÅŸkenine taÅŸÄ±yÄ±n."))
+                bulgular.append(
+                        Bulgu(
+                        "KDT06",
+                        "kritik",
+                        goreceli,
+                        sira,
+                        f"Koda gömÃ¼lÃ¼ gizli anahtar bulundu ({ad}).",
+                        _maskele(eslesme.group(0)),
+                        "Anahtarı ortam değişkenine taşıyın.",
+                        )
+                )
                 break
         if LOG_FONK.search(satir) and not py_mi and GIZLI_AD.search(satir):
-            bulgular.append(Bulgu("KDT07", "orta", goreceli, sira, "Hassas deÄŸer log veya konsola yazÄ±lÄ±yor.", _kanit(satir), "Loglara anahtar veya gizli deÄŸer yazmayÄ±n."))
+            bulgular.append(
+                    Bulgu(
+                    "KDT07",
+                    "orta",
+                    goreceli,
+                    sira,
+                    "Hassas değer log veya konsola yazılıyor.",
+                    _kanit(satir),
+                    "Loglara anahtar veya gizli değer yazmayın.",
+                    )
+            )
     return bulgular
 
 

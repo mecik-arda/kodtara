@@ -19,7 +19,9 @@ class TurkceAyrıştırıcı(argparse.ArgumentParser):
 
 
 def ana(argumanlar: list[str] | None = None) -> int:
-    ayrıştırıcı = TurkceAyrıştırıcı(prog="kodtara", description="KodTara LLM uygulama kodu tarayıcısı", add_help=False)
+    ayrıştırıcı = TurkceAyrıştırıcı(
+        prog="kodtara", description="KodTara LLM uygulama kodu tarayıcısı", add_help=False
+    )
     ayrıştırıcı._positionals.title = "Komutlar"
     ayrıştırıcı._optionals.title = "Seçenekler"
     ayrıştırıcı.add_argument("--help", "-h", action="help", help="Yardımı göster ve çık")
@@ -30,7 +32,12 @@ def ana(argumanlar: list[str] | None = None) -> int:
     tara.add_argument("--help", "-h", action="help", help="Yardımı göster ve çık")
     tara.add_argument("yol", metavar="YOL", help="Dosya veya dizin")
     tara.add_argument("--bicim", choices=["metin", "json"], default="metin", help="Rapor biçimi")
-    tara.add_argument("--esik", choices=list(SEVIYELER), default="yuksek", help="Başarısız çıkış için en düşük risk seviyesi")
+    tara.add_argument(
+        "--esik",
+        choices=list(SEVIYELER),
+        default="yuksek",
+        help="Başarısız çıkış için en düşük risk seviyesi",
+    )
     secenekler = ayrıştırıcı.parse_args(argumanlar)
     try:
         bulgular, taranan, atlanan = tara_yolu(secenekler.yol)

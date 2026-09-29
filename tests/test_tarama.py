@@ -6,7 +6,6 @@ from pathlib import Path
 from kodtara.cli import ana
 from kodtara.tarayici import tara_yolu
 
-
 RISKLİ = """import openai
 import requests
 

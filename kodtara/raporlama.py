@@ -33,7 +33,9 @@ def raporla(bulgular: list[Bulgu], bicim: str, dosya_sayisi: int, esik: str) -> 
         )
     satirlar = [f"KodTara: {dosya_sayisi} dosya, {len(bulgular)} bulgu."]
     for bulgu in bulgular:
-        satirlar.append(f"[{bulgu.seviye.capitalize()}] {bulgu.dosya}:{bulgu.satir} {bulgu.kural}: {bulgu.aciklama}")
+        satirlar.append(
+            f"[{bulgu.seviye.capitalize()}] {bulgu.dosya}:{bulgu.satir} {bulgu.kural}: {bulgu.aciklama}"
+        )
         if bulgu.kanit:
             satirlar.append(f"  Kanıt: {bulgu.kanit}")
         satirlar.append(f"  Öneri: {bulgu.oneri}")
